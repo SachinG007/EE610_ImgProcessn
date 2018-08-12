@@ -75,6 +75,11 @@ class Window(QWidget):
         btn_blur.resize(5,5)
         grid.addWidget(btn_blur,2,0)
 
+        #defining button for sharpening
+        btn_sharp = QPushButton("sharp img", self)
+        btn_sharp.clicked.connect(self.sharp_img)
+        btn_sharp.resize(5,5)
+        grid.addWidget(btn_sharp,2,1)
 
         #define figure and canvas to plot the loaded image on this
         self.figure = plt.figure(figsize=(15,5))
@@ -167,6 +172,63 @@ class Window(QWidget):
             ax.set_title("blurred Image")
             plt.imshow(blurred_img, cmap = "gray")
             self.canvas.draw()
+
+    def sharp_img(self):
+
+        A_hboost,ok = QInputDialog.getInt(self,"Sharp image","enter A>1 for high boost sharpening")
+
+        if ok:         
+
+            kernel = np.matrix([[-1,-1,-1],[-1,A_hboost + 8,-1],[-1,-1,-1]])
+            laplace_sharped_img = conv2D(original_image_gray,kernel)
+            laplace_sharped_img = neg_pixel(laplace_sharped_img)
+            
+
+            kernel = np.matrix([[-1,-2,-1],[0,0,0],[1,2,1]])
+            Gx = conv2D(original_image_gray,kernel)
+            Gx = np.absolute(Gx)
+
+            kernel = np.matrix([[-1,0,1],[-2,0,2],[-1,0,1]])
+            Gy = conv2D(original_image_gray,kernel)
+            Gy = np.absolute(Gy)
+
+            gradient = Gx + Gy
+
+            kernel = (1/9)*np.matrix([[1,1,1],[1,1,1],[1,1,1]])
+            smooth_gradient = conv2D(gradient,kernel)
+
+            x = laplace_sharped_img.shape[0]
+            y = laplace_sharped_img.shape[1]
+            smooth_gradient = cv2.resize(smooth_gradient,(y,x))
+
+            sharp_mask = np.multiply(smooth_gradient,laplace_sharped_img)
+            max_mask = sharp_mask.max()
+            sharp_mask = sharp_mask * 255/max_mask
+
+            x = original_image_gray.shape[0]
+            y = original_image_gray.shape[1]
+            sharp_mask = cv2.resize(sharp_mask,(y,x))   
+
+            print("Minimum In Sharp")
+            print(sharp_mask.max())
+
+
+            output_sharp = original_image_gray + sharp_mask
+
+            ax = self.figure.add_subplot(222)
+            ax.set_title("Orig Image")
+            plt.imshow(original_image_gray, cmap = "gray")
+
+            ax = self.figure.add_subplot(223)
+            ax.set_title("Sharp mask")
+            plt.imshow(sharp_mask, cmap = "gray")
+
+            ax = self.figure.add_subplot(224)
+            ax.set_title("sharpened Image")
+            plt.imshow(output_sharp, cmap = "gray")
+
+            self.canvas.draw()
+
 
 
 def run():

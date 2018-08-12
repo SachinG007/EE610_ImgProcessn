@@ -16,7 +16,14 @@ import numpy as np
 # print(x)
 # x.shape()
 
-x = np.arange(-5, 5, 1)
-y = np.arange(-5, 5, 1)
-xx, yy = np.meshgrid(x, y, sparse=True)
-print(xx)
+# x = np.arange(-5, 5, 1)
+# y = np.arange(-5, 5, 1)
+# xx, yy = np.meshgrid(x, y, sparse=True)
+# print(xx)
+
+
+img = np.matrix([[1,2,3],[2,-3,4],[5,6,8]])
+# print(np.absolute(img))
+img2 = np.matrix([[1,0,3],[0,-3,4],[5,6,0]])
+
+print(np.multiply(img,img2))

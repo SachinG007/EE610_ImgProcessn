@@ -30,7 +30,7 @@ def conv2D(image,kernel):
     img_height = image.shape[1]
 
     #output will be smallr in size
-    blurred_image = np.zeros((img_width - ker_x + 1,img_height - ker_y + 1))
+    conv_image = np.zeros((img_width - ker_x + 1,img_height - ker_y + 1))
 
     # print(image[3][3])
     # pad_image = cv2.copyMakeBorder(image, kery_by2,kery_by2,kerx_by2,kerx_by2, cv2.BORDER_DEFAULT, value = 0)
@@ -48,9 +48,9 @@ def conv2D(image,kernel):
             # print(current_patch_vector.shape)
 
             #copy the calculatedvalue to the output image
-            blurred_image[i-kerx_by2][j-kery_by2] = np.dot(kernel_vector,current_patch_vector)
+            conv_image[i-kerx_by2][j-kery_by2] = np.dot(kernel_vector,current_patch_vector)
 
-    return blurred_image
+    return conv_image
 
 
 def gamma_correction(image,val_gamma):
@@ -85,3 +85,15 @@ def histogram_eq(image):
 
 
     return hist_eq_output_image
+
+
+def neg_pixel(image):
+
+    min_intensity = image.min()
+    image = image - min_intensity
+    max_intensity = image.max()
+
+    image = image * 255/max_intensity
+
+
+    return image
