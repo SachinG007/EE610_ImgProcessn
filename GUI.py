@@ -23,12 +23,43 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-# np.set_printoptions(threshold='nan')
+np.set_printoptions(threshold='nan')
 
 
 
 def gamma_correction(image,val_gamma):
     return np.power(image,val_gamma)
+
+def histogram_eq(image):
+
+    #first compute the frequncies of each of the intensity levels
+    intensity_freq = np.zeros((256,1))
+
+    for i in range(0,image.shape[0]):
+        for j in range(0,image.shape[1]):
+            intensity_val = image[i][j]
+            intensity_freq[intensity_val] = intensity_freq[intensity_val] + 1;
+
+    cumulative_freq = np.zeros((256,1))
+    sum =0
+    for k in range(0,256):
+        sum = sum + intensity_freq[k]
+        cumulative_freq[k] = sum
+
+    total_pixels = image.shape[0] * image.shape[1]
+
+    cumulative_freq_norm = 255*cumulative_freq/total_pixels    
+
+    #construct the final image
+    hist_eq_output_image = np.zeros((image.shape[0],image.shape[1]))
+
+    for p in range(0,image.shape[0]):
+        for q in range(0,image.shape[1]):
+            hist_eq_output_image[p][q] = cumulative_freq_norm[image[p][q]]
+
+
+    return hist_eq_output_image
+
 
 class Window(QtGui.QWidget):
     
@@ -48,27 +79,34 @@ class Window(QtGui.QWidget):
         #defining button for loading an image
         btn_load = QtGui.QPushButton("load_img", self)
         btn_load.clicked.connect(self.load_image)
-        btn_load.resize(10,10)
+        btn_load.resize(5,5)
         grid.addWidget(btn_load,0,0)
 
         #defining button for gamma correction
         btn_gamma = QtGui.QPushButton("Gamma Correcn", self)
         val_gamma = btn_gamma.clicked.connect(self.load_gamma)
-        btn_gamma.resize(10,10)
+        btn_gamma.resize(5,5)
         grid.addWidget(btn_gamma,0,1)
 
         #defining button for Log Transform
         btn_log = QtGui.QPushButton("Log Transform", self)
         btn_log.clicked.connect(self.log_transform)
-        btn_log.resize(10,10)
-        grid.addWidget(btn_log,0,2)
+        btn_log.resize(5,5)
+        grid.addWidget(btn_log,1,0)
+
+        #defining button for histogram Equalization
+        btn_hist = QtGui.QPushButton("Histogram Eq", self)
+        btn_hist.clicked.connect(self.hist_eq)
+        btn_hist.resize(5,5)
+        grid.addWidget(btn_hist,1,1)
 
 
         #define figure and canvas to plot the loaded image on this
         self.figure = plt.figure(figsize=(15,5))
         self.canvas = FigureCanvas(self.figure)
-        grid.addWidget(self.canvas,1,0,3,2)        
+        grid.addWidget(self.canvas,2,0,3,2)        
         self.show()
+
 
     def load_image(self):
 
@@ -79,8 +117,10 @@ class Window(QtGui.QWidget):
         filename = QtGui.QFileDialog.getOpenFileName(self,'select')
         original_image_gray = cv2.imread(str(filename),0)
         print(original_image_gray.shape)
+        print(original_image_gray)
         plt.imshow(original_image_gray, cmap = "gray")
         self.canvas.draw()
+
 
     def load_gamma(self):
 
@@ -94,6 +134,7 @@ class Window(QtGui.QWidget):
             plt.imshow(gamma_corr_img, cmap = "gray")
             self.canvas.draw()
 
+
     def log_transform(self):
 
         c_for_log,ok = QInputDialog.getDouble(self,"Log Transformation","Value of C")
@@ -104,10 +145,35 @@ class Window(QtGui.QWidget):
             #need to convert the value to interger becuse log has decimal values
             log_transformed_img = log_transformed_img.astype(int)
             print(log_transformed_img)
-            ax = self.figure.add_subplot(222)
+            ax = self.figure.add_subplot(223)
             ax.set_title("Log Transformed Image")
             plt.imshow(log_transformed_img, cmap = "gray")
             self.canvas.draw()
+
+
+    def hist_eq(self):
+        histogram_output_img = histogram_eq(original_image_gray)
+
+        ax = self.figure.add_subplot(222)
+        ax.clear()
+        plt.hist(original_image_gray.ravel(),256,[0,256]);
+        ax.set_title("Histogram of Original Image")
+        # plt.show()
+
+        # print(histogram_output_img)
+        ax = self.figure.add_subplot(224)
+        ax.set_title("Histogram Equalization Output")
+        plt.imshow(histogram_output_img, cmap = "gray")
+        
+        ax = self.figure.add_subplot(223)
+        ax.clear()
+        plt.hist(histogram_output_img.ravel(),256,[0,256]);
+        ax.set_title("Histogram of New Image")
+        # plt.show()
+
+        self.canvas.draw()
+
+
 
 def run():
     app = QtGui.QApplication(sys.argv)
