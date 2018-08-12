@@ -3,7 +3,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget,QFileDialog, QInputDialog
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGroupBox, QDialog, QVBoxLayout, QGridLayout
-
+from GUI_functions import *
 
 
 # from matplotlib.figure import Figure # Import matplotlib figure object
@@ -28,53 +28,6 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 np.set_printoptions(threshold='nan')
-
-def conv2D(image,kernel):
-
-    ker_x = kernel.shape[0]
-    ker_y = kernel.shape[1]
-    img_x = image.shape[0]
-    img_y= image.shape[1]
-
-    print(img_x)
-    print(image[3][3])
-    image = cv2.copyMakeBorder(image, 2,2,2,2, cv2.BORDER_DEFAULT, value = 0)
-    print(image.shape)
-
-
-
-def gamma_correction(image,val_gamma):
-    return np.power(image,val_gamma)
-
-def histogram_eq(image):
-
-    #first compute the frequncies of each of the intensity levels
-    intensity_freq = np.zeros((256,1))
-
-    for i in range(0,image.shape[0]):
-        for j in range(0,image.shape[1]):
-            intensity_val = image[i][j]
-            intensity_freq[intensity_val] = intensity_freq[intensity_val] + 1;
-
-    cumulative_freq = np.zeros((256,1))
-    sum =0
-    for k in range(0,256):
-        sum = sum + intensity_freq[k]
-        cumulative_freq[k] = sum
-
-    total_pixels = image.shape[0] * image.shape[1]
-
-    cumulative_freq_norm = 255*cumulative_freq/total_pixels    
-
-    #construct the final image
-    hist_eq_output_image = np.zeros((image.shape[0],image.shape[1]))
-
-    for p in range(0,image.shape[0]):
-        for q in range(0,image.shape[1]):
-            hist_eq_output_image[p][q] = cumulative_freq_norm[image[p][q]]
-
-
-    return hist_eq_output_image
 
 
 class Window(QWidget):
@@ -129,9 +82,6 @@ class Window(QWidget):
         grid.addWidget(self.canvas,3,0,3,2)        
         self.show()
 
-    def blur_img(self):
-        kernel = (1/9)*np.matrix([[1, 1,1], [1, 1,1],[1,1,1]])
-        conv2D(original_image_gray,kernel)
 
     def load_image(self):
 
@@ -200,6 +150,23 @@ class Window(QWidget):
 
         self.canvas.draw()
 
+
+    def blur_img(self):
+
+        blur_size,ok = QInputDialog.getDouble(self,"Blur image","enter size of kernel (ODD ONLY")
+
+        if ok:   
+
+            blur_size= int(blur_size)
+            kernel = (1/np.power(blur_size,2))*np.ones((blur_size,blur_size))
+            blurred_img = conv2D(original_image_gray,kernel)
+            # print("outputshape: " )
+            # print(blurred_img.shape)
+
+            ax = self.figure.add_subplot(224)
+            ax.set_title("blurred Image")
+            plt.imshow(blurred_img, cmap = "gray")
+            self.canvas.draw()
 
 
 def run():
