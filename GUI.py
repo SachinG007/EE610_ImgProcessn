@@ -90,17 +90,23 @@ class Window(QWidget):
 
     def load_image(self):
 
-        global original_image_gray
+        global original_image
+        global hsv_image
+        global v_channel
 
         ax = self.figure.add_subplot(221)
         ax.set_title("Original Image")
         filename = QFileDialog.getOpenFileName(self,'select')
         print(filename[0])
-        original_image_gray = cv2.imread(str(filename[0]),0)
-        print(original_image_gray.shape)
-        # print(original_image_gray)
-        print("dfs")
-        plt.imshow(original_image_gray, cmap = "gray")
+
+        original_image = cv2.imread(str(filename[0]),1)
+        hsv_image = cv2.cvtColor(original_image,cv2.COLOR_BGR2HSV)
+        v_channel = hsv_image[:,:,2]
+
+        print(original_image.shape)
+        # print(original_image)
+        # print("dfs")
+        plt.imshow(original_image)
         self.canvas.draw()
 
 
@@ -110,10 +116,17 @@ class Window(QWidget):
 
         if ok:
 
-            gamma_corr_img = gamma_correction(original_image_gray,gamma)
+            gamma_corr_img = gamma_correction(v_channel,gamma)
+            gamma_max = gamma_corr_img.max()
+            gamma_corr_img = gamma_corr_img * 255 /gamma_max
+            aa = gamma_corr_img.astype(int)
+            # print(aa)
+            hsv_image[:,:,2] = gamma_corr_img[:,:]
+
+            output = cv2.cvtColor(hsv_image,cv2.COLOR_HSV2BGR)
             ax = self.figure.add_subplot(222)
             ax.set_title("Gamma Corrected Image")
-            plt.imshow(gamma_corr_img, cmap = "gray")
+            plt.imshow(output)
             self.canvas.draw()
 
 
@@ -123,7 +136,7 @@ class Window(QWidget):
 
         if ok:
    
-            log_transformed_img = c_for_log*(np.log10(1 + original_image_gray))
+            log_transformed_img = c_for_log*(np.log10(1 + original_image))
             #need to convert the value to interger becuse log has decimal values
             log_transformed_img = log_transformed_img.astype(int)
             # print(log_transformed_img)
@@ -134,11 +147,11 @@ class Window(QWidget):
 
 
     def hist_eq(self):
-        histogram_output_img = histogram_eq(original_image_gray)
+        histogram_output_img = histogram_eq(original_image)
 
         ax = self.figure.add_subplot(222)
         ax.clear()
-        plt.hist(original_image_gray.ravel(),256,[0,256]);
+        plt.hist(original_image.ravel(),256,[0,256]);
         ax.set_title("Histogram of Original Image")
         # plt.show()
 
@@ -164,7 +177,7 @@ class Window(QWidget):
 
             blur_size= int(blur_size)
             kernel = (1/np.power(blur_size,2))*np.ones((blur_size,blur_size))
-            blurred_img = conv2D(original_image_gray,kernel)
+            blurred_img = conv2D(original_image,kernel)
             # print("outputshape: " )
             # print(blurred_img.shape)
 
@@ -180,16 +193,16 @@ class Window(QWidget):
         if ok:         
 
             kernel = np.matrix([[-1,-1,-1],[-1,A_hboost + 8,-1],[-1,-1,-1]])
-            laplace_sharped_img = conv2D(original_image_gray,kernel)
+            laplace_sharped_img = conv2D(original_image,kernel)
             laplace_sharped_img = neg_pixel(laplace_sharped_img)
             
 
             kernel = np.matrix([[-1,-2,-1],[0,0,0],[1,2,1]])
-            Gx = conv2D(original_image_gray,kernel)
+            Gx = conv2D(original_image,kernel)
             Gx = np.absolute(Gx)
 
             kernel = np.matrix([[-1,0,1],[-2,0,2],[-1,0,1]])
-            Gy = conv2D(original_image_gray,kernel)
+            Gy = conv2D(original_image,kernel)
             Gy = np.absolute(Gy)
 
             gradient = Gx + Gy
@@ -205,19 +218,19 @@ class Window(QWidget):
             max_mask = sharp_mask.max()
             sharp_mask = sharp_mask * 255/max_mask
 
-            x = original_image_gray.shape[0]
-            y = original_image_gray.shape[1]
+            x = original_image.shape[0]
+            y = original_image.shape[1]
             sharp_mask = cv2.resize(sharp_mask,(y,x))   
 
             print("Minimum In Sharp")
             print(sharp_mask.max())
 
 
-            output_sharp = original_image_gray + sharp_mask
+            output_sharp = original_image + sharp_mask
 
             ax = self.figure.add_subplot(222)
             ax.set_title("Orig Image")
-            plt.imshow(original_image_gray, cmap = "gray")
+            plt.imshow(original_image, cmap = "gray")
 
             ax = self.figure.add_subplot(223)
             ax.set_title("Sharp mask")
