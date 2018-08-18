@@ -116,12 +116,10 @@ class Window(QWidget):
 
         if ok:
 
-            gamma_corr_img = gamma_correction(v_channel,gamma)
-            gamma_max = gamma_corr_img.max()
-            gamma_corr_img = gamma_corr_img * 255 /gamma_max
-            aa = gamma_corr_img.astype(int)
-            # print(aa)
-            hsv_image[:,:,2] = gamma_corr_img[:,:]
+            gamma_corr_v = gamma_correction(v_channel,gamma)
+            gamma_max = gamma_corr_v.max()
+            gamma_corr_v = gamma_corr_v * 255 /gamma_max
+            hsv_image[:,:,2] = gamma_corr_v[:,:]
 
             output = cv2.cvtColor(hsv_image,cv2.COLOR_HSV2BGR)
             ax = self.figure.add_subplot(222)
@@ -136,33 +134,42 @@ class Window(QWidget):
 
         if ok:
    
-            log_transformed_img = c_for_log*(np.log10(1 + original_image))
+            log_transformed_v = c_for_log*(np.log10(1 + v_channel))
             #need to convert the value to interger becuse log has decimal values
-            log_transformed_img = log_transformed_img.astype(int)
-            # print(log_transformed_img)
+            log_transformed_v = log_transformed_v.astype(int)
+            log_max = log_transformed_v.max()
+            log_transformed_v = log_transformed_v * 255/log_max
+            log_transformed_v = neg_pixel(log_transformed_v)
+            hsv_image[:,:,2] = log_transformed_v[:,:]
+
+            output = cv2.cvtColor(hsv_image,cv2.COLOR_HSV2BGR)
             ax = self.figure.add_subplot(223)
             ax.set_title("Log Transformed Image")
-            plt.imshow(log_transformed_img, cmap = "gray")
+            plt.imshow(output)
             self.canvas.draw()
 
 
     def hist_eq(self):
-        histogram_output_img = histogram_eq(original_image)
+        histogram_output_v = histogram_eq(v_channel)
+        hist_max = histogram_output_v.max()
+        histogram_output_v = histogram_output_v * 255/hist_max
+        hsv_image[:,:,2] = histogram_output_v[:,:]
 
         ax = self.figure.add_subplot(222)
         ax.clear()
-        plt.hist(original_image.ravel(),256,[0,256]);
+        plt.hist(v_channel.ravel(),256,[0,256]);
         ax.set_title("Histogram of Original Image")
         # plt.show()
 
         # print(histogram_output_img)
+        output = cv2.cvtColor(hsv_image,cv2.COLOR_HSV2BGR)
         ax = self.figure.add_subplot(224)
         ax.set_title("Histogram Equalization Output")
-        plt.imshow(histogram_output_img, cmap = "gray")
+        plt.imshow(output)
         
         ax = self.figure.add_subplot(223)
         ax.clear()
-        plt.hist(histogram_output_img.ravel(),256,[0,256]);
+        plt.hist(histogram_output_v.ravel(),256,[0,256]);
         ax.set_title("Histogram of New Image")
         # plt.show()
 
@@ -177,13 +184,20 @@ class Window(QWidget):
 
             blur_size= int(blur_size)
             kernel = (1/np.power(blur_size,2))*np.ones((blur_size,blur_size))
-            blurred_img = conv2D(original_image,kernel)
-            # print("outputshape: " )
-            # print(blurred_img.shape)
+            blurred_v = conv2D(v_channel,kernel)
+            blur_max = blurred_v.max()
+            blurred_v = blurred_v * 255/blur_max
 
+            x = v_channel.shape[0]
+            y = v_channel.shape[1]
+            blurred_v = cv2.resize(blurred_v,(y,x))
+            # print(blurred_v)
+
+            hsv_image[:,:,2] = blurred_v[:,:]
+            output = cv2.cvtColor(hsv_image,cv2.COLOR_HSV2BGR)
             ax = self.figure.add_subplot(224)
             ax.set_title("blurred Image")
-            plt.imshow(blurred_img, cmap = "gray")
+            plt.imshow(output, cmap = "gray")
             self.canvas.draw()
 
     def sharp_img(self):
