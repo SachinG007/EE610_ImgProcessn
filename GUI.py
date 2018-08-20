@@ -92,15 +92,21 @@ class Window(QWidget):
         grid.addWidget(btn_sharp,3,0)
 
         #defining button for go back to previous state
-        btn_sharp = QPushButton("Undo Previous", self)
-        btn_sharp.clicked.connect(self.undo_prev)
+        btn_sharp = QPushButton("Restore Original", self)
+        btn_sharp.clicked.connect(self.restore)
         btn_sharp.resize(5,5)
         grid.addWidget(btn_sharp,3,1)
+
+        #defining button for storing thre image
+        btn_sharp = QPushButton("Save Image", self)
+        btn_sharp.clicked.connect(self.save_image)
+        btn_sharp.resize(5,5)
+        grid.addWidget(btn_sharp,4,0)
 
         #define figure and canvas to plot the loaded image on this
         self.figure = plt.figure(figsize=(15,5))
         self.canvas = FigureCanvas(self.figure)
-        grid.addWidget(self.canvas,4,0,3,2)        
+        grid.addWidget(self.canvas,5,0,3,2)        
         self.show()
 
 
@@ -114,7 +120,7 @@ class Window(QWidget):
         # self.original_image = cv2.resize(self.original_image,(256,256))
         self.hsv_image = cv2.cvtColor(self.original_image,cv2.COLOR_BGR2HSV)
         self.v_channel = self.hsv_image[:,:,2]
-        self.v_channel_prev = self.v_channel
+        self.v_channel_orig = self.v_channel
 
 
         print(self.original_image.shape)
@@ -137,7 +143,7 @@ class Window(QWidget):
             self.hsv_image[:,:,2] = self.v_channel[:,:]
 
             output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            ax = self.figure.add_subplot(221)
+            ax = self.figure.add_subplot(222)
             ax.set_title("Gamma Corrected Image")
             plt.imshow(output)
             self.canvas.draw()
@@ -159,7 +165,7 @@ class Window(QWidget):
             self.v_channel = log_transformed_v[:,:]
 
             output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            ax = self.figure.add_subplot(223)
+            ax = self.figure.add_subplot(222)
             ax.set_title("Log Transformed Image")
             plt.imshow(output)
             self.canvas.draw()
@@ -316,7 +322,20 @@ class Window(QWidget):
         plt.imshow(output)
         self.canvas.draw()
 
+    def restore(self):
 
+        self.hsv_image[:,:,2] = self.v_channel_orig[:,:]
+        output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
+        ax = self.figure.add_subplot(222)
+        ax.set_title("Original Image")
+        plt.imshow(output)
+        self.canvas.draw()
+
+    def save_image(self):
+
+        self.hsv_image[:,:,2] = self.v_channel[:,:]
+        output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2RGB)
+        cv2.imwrite("Current Image.jpg",output)
 
 def run():
     app = QApplication(sys.argv)
