@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 
 def conv2D(image,kernel):
 
+    kernel = np.flip(kernel,0)
+    kernel = np.flip(kernel,1)
     ker_x = kernel.shape[0]
     ker_y = kernel.shape[1]
     kerx_by2 = (np.floor(ker_x/2)).astype(int)
