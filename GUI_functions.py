@@ -99,3 +99,23 @@ def neg_pixel(image):
 
 
     return image
+
+def gen_gaussian(kernel_size,sigma):
+
+    kernel = np.zeros((kernel_size,kernel_size))
+    kernel_sizeby2 = kernel_size/2
+    sigma2 = np.square(sigma)
+
+    for i in range(kernel_size):
+        for j in range(kernel_size):
+
+            kernel[i][j] = np.square(i - kernel_sizeby2) + np.square(j - kernel_sizeby2)
+            kernel[i][j] = -kernel[i][j]
+            kernel[i][j] = np.exp(kernel[i][j]/(2*sigma2))
+
+    kernel = kernel/(2*3.14*sigma2)
+
+    sum_all = np.sum(kernel)
+    kernel = kernel/sum_all
+
+    return kernel

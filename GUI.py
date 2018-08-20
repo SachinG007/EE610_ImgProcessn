@@ -73,23 +73,29 @@ class Window(QWidget):
         btn_hist.resize(5,5)
         grid.addWidget(btn_hist,1,1)
 
-        #defining button for convolution 2d
+        #defining button for BLURR IMG
         btn_blur = QPushButton("blur img", self)
         btn_blur.clicked.connect(self.blur_img)
         btn_blur.resize(5,5)
         grid.addWidget(btn_blur,2,0)
 
+        #defining button for GAUSSIAN bLUR
+        btn_sharp = QPushButton("gaussian blur", self)
+        btn_sharp.clicked.connect(self.gaussian_blur)
+        btn_sharp.resize(5,5)
+        grid.addWidget(btn_sharp,2,1)
+
         #defining button for sharpening
         btn_sharp = QPushButton("sharp img", self)
         btn_sharp.clicked.connect(self.sharp_img)
         btn_sharp.resize(5,5)
-        grid.addWidget(btn_sharp,2,1)
+        grid.addWidget(btn_sharp,3,0)
 
         #defining button for go back to previous state
         btn_sharp = QPushButton("Undo Previous", self)
         btn_sharp.clicked.connect(self.undo_prev)
         btn_sharp.resize(5,5)
-        grid.addWidget(btn_sharp,3,0)
+        grid.addWidget(btn_sharp,3,1)
 
         #define figure and canvas to plot the loaded image on this
         self.figure = plt.figure(figsize=(15,5))
@@ -112,7 +118,7 @@ class Window(QWidget):
 
 
         print(self.original_image.shape)
-        ax = self.figure.add_subplot(211)
+        ax = self.figure.add_subplot(221)
         ax.set_title("Original Image")
         plt.imshow(self.original_image)
         self.canvas.draw()
@@ -160,26 +166,27 @@ class Window(QWidget):
 
 
     def hist_eq(self):
-        histogram_output_v = histogram_eq(v_channel)
-        hist_max = histogram_output_v.max()
-        histogram_output_v = histogram_output_v * 255/hist_max
-        hsv_image[:,:,2] = histogram_output_v[:,:]
 
         ax = self.figure.add_subplot(222)
         ax.clear()
-        plt.hist(v_channel.ravel(),256,[0,256]);
+        plt.hist(self.v_channel.ravel(),256,[0,256]);
         ax.set_title("Histogram of Original Image")
-        # plt.show()
+
+        histogram_output_v = histogram_eq(self.v_channel)
+        hist_max = histogram_output_v.max()
+        histogram_output_v = histogram_output_v * 255/hist_max
+        self.hsv_image[:,:,2] = histogram_output_v[:,:]
+        self.v_channel = histogram_output_v[:,:]
 
         # print(histogram_output_img)
-        output = cv2.cvtColor(hsv_image,cv2.COLOR_HSV2BGR)
+        output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
         ax = self.figure.add_subplot(224)
         ax.set_title("Histogram Equalization Output")
         plt.imshow(output)
         
         ax = self.figure.add_subplot(223)
         ax.clear()
-        plt.hist(histogram_output_v.ravel(),256,[0,256]);
+        plt.hist(self.v_channel.ravel(),256,[0,256]);
         ax.set_title("Histogram of New Image")
         # plt.show()
 
@@ -210,6 +217,38 @@ class Window(QWidget):
             ax.set_title("blurred Image")
             plt.imshow(output)
             self.canvas.draw()
+
+    def gaussian_blur(self):
+
+        kernel_size,ok = QInputDialog.getDouble(self,"Gaussian Blur image","enter size of kernel (ODD ONLY")
+        if ok:   
+
+            sigma,ok = QInputDialog.getDouble(self,"Gaussian Blur image","enter vale of sigma")
+            if ok:   
+
+                kernel_size= int(kernel_size)
+                sigma = int(sigma)
+                kernel = gen_gaussian(kernel_size,sigma)
+                print(kernel[2][2])
+                blurred_v = conv2D(self.v_channel,kernel)
+                blur_max = blurred_v.max()
+                blurred_v = blurred_v * 255/blur_max
+
+                x = self.v_channel.shape[0]
+                y = self.v_channel.shape[1]
+                blurred_v = cv2.resize(blurred_v,(y,x))
+                # print(blurred_v)
+
+                self.hsv_image[:,:,2] = blurred_v[:,:]
+                self.v_channel = blurred_v[:,:]
+                output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
+                ax = self.figure.add_subplot(224)
+                ax.set_title("Gaussian blurred Image")
+                plt.imshow(output)
+                self.canvas.draw()
+
+
+
 
     def sharp_img(self):
 
