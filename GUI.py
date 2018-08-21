@@ -4,7 +4,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget,QFileDialog, QInputDialog
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGroupBox, QDialog, QVBoxLayout, QGridLayout
 from GUI_functions import *
-
+# from copy import deepcopy
 
 # from matplotlib.figure import Figure # Import matplotlib figure object
 # #from matplotlib.backends.backend import FigureCanvasQTAgg as FigureCanvas 
@@ -92,16 +92,22 @@ class Window(QWidget):
         grid.addWidget(btn_sharp,3,0)
 
         #defining button for go back to previous state
+        btn_sharp = QPushButton("Undo", self)
+        btn_sharp.clicked.connect(self.undo_prev)
+        btn_sharp.resize(5,5)
+        grid.addWidget(btn_sharp,3,1)
+
+        #defining button for go back to original state
         btn_sharp = QPushButton("Restore Original", self)
         btn_sharp.clicked.connect(self.restore)
         btn_sharp.resize(5,5)
-        grid.addWidget(btn_sharp,3,1)
+        grid.addWidget(btn_sharp,4,0)
 
         #defining button for storing thre image
         btn_sharp = QPushButton("Save Image", self)
         btn_sharp.clicked.connect(self.save_image)
         btn_sharp.resize(5,5)
-        grid.addWidget(btn_sharp,4,0)
+        grid.addWidget(btn_sharp,4,1)
 
         #define figure and canvas to plot the loaded image on this
         self.figure = plt.figure(figsize=(15,5))
@@ -120,7 +126,7 @@ class Window(QWidget):
         # self.original_image = cv2.resize(self.original_image,(256,256))
         self.hsv_image = cv2.cvtColor(self.original_image,cv2.COLOR_BGR2HSV)
         self.v_channel = self.hsv_image[:,:,2]
-        self.v_channel_orig = self.v_channel
+        self.v_channel_orig = np.copy(self.v_channel)
 
 
         print(self.original_image.shape)
@@ -135,7 +141,7 @@ class Window(QWidget):
         gamma,ok = QInputDialog.getDouble(self,"Gamma Correction","Value of Gamma")
 
         if ok:
-            self.v_channel_prev = self.v_channel
+            self.v_channel_prev = np.copy(self.v_channel)
             # pass the v_channel to the gamma correction function    
             gamma_corr_v = gamma_correction(self.v_channel,gamma)
             # since we are applying a power operation, we need to scale back all the values to 0-255
@@ -159,7 +165,8 @@ class Window(QWidget):
         c_for_log,ok = QInputDialog.getDouble(self,"Log Transformation","Value of C")
 
         if ok:
-            
+
+            self.v_channel_prev = np.copy(self.v_channel)            
             #maths equation   
             log_transformed_v = c_for_log*(np.log10(1 + self.v_channel))
             #need to convert the value to interger becuse log has decimal values
@@ -183,6 +190,7 @@ class Window(QWidget):
 
     def hist_eq(self):
 
+        self.v_channel_prev = np.copy(self.v_channel)            
         #first displaying thr histogram of the original image
         ax = self.figure.add_subplot(222)
         ax.clear()
@@ -220,6 +228,7 @@ class Window(QWidget):
         #if input is done
         if ok:   
 
+            self.v_channel_prev = np.copy(self.v_channel)            
             #convert input to integer
             blur_size= int(blur_size)
 
@@ -256,6 +265,7 @@ class Window(QWidget):
             sigma,ok = QInputDialog.getDouble(self,"Gaussian Blur image","enter vale of sigma")
             if ok:   
 
+                self.v_channel_prev = np.copy(self.v_channel)            
                 #convert the entered values to intergres
                 kernel_size= int(kernel_size)
                 sigma = int(sigma)
@@ -291,6 +301,7 @@ class Window(QWidget):
 
         if ok:         
 
+            self.v_channel_prev = np.copy(self.v_channel)            
             #construct filter to compute the laplacian 
             kernel = np.matrix([[-1,-1,-1],[-1,A_hboost + 8,-1],[-1,-1,-1]])
             laplace_sharped_img = conv2D(self.v_channel,kernel)
@@ -349,10 +360,11 @@ class Window(QWidget):
             self.canvas.draw()
 
     def undo_prev(self):
-        # v_channel_prev_temp = v_channel_prev
-        # v_channel_prev = v_channel
-        # v_channel = v_channel_prev
-        # self.hsv_image[:,:,2] = self.v_channel_prev[:,:]
+        self.v_channel_prev_temp = np.copy(self.v_channel_prev)
+        self.v_channel_prev = np.copy(self.v_channel)
+        self.v_channel = np.copy(self.v_channel_prev_temp)            
+
+        self.hsv_image[:,:,2] = np.copy(self.v_channel[:,:])
         output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
         ax = self.figure.add_subplot(222)
         ax.set_title("Previous Image")
@@ -361,7 +373,7 @@ class Window(QWidget):
 
     def restore(self):
 
-        self.hsv_image[:,:,2] = self.v_channel_orig[:,:]
+        self.hsv_image[:,:,2] = np.copy(self.v_channel_orig[:,:])
         output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
         ax = self.figure.add_subplot(222)
         ax.set_title("Original Image")
