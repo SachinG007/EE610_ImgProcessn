@@ -113,7 +113,7 @@ class Window(QWidget):
         #function to call when the button is pressed
         btn_sharp.clicked.connect(self.undo_prev)
         btn_sharp.resize(5,5)
-        grid.addWidget(btn_sharp,3,1)
+        grid.addWidget(btn_sharp,7,0)
 
         #defining button for go back to original state
         #name of the button
@@ -121,7 +121,7 @@ class Window(QWidget):
         #function to call when the button is pressed
         btn_sharp.clicked.connect(self.restore)
         btn_sharp.resize(5,5)
-        grid.addWidget(btn_sharp,4,0)
+        grid.addWidget(btn_sharp,7,1)
 
         #defining button for storing thre image
         #name of the button
@@ -129,12 +129,17 @@ class Window(QWidget):
         #function to call when the button is pressed
         btn_sharp.clicked.connect(self.save_image)
         btn_sharp.resize(5,5)
-        grid.addWidget(btn_sharp,4,1)
+        grid.addWidget(btn_sharp,8,0)
 
         #define figure and canvas to plot the loaded image on this
         self.figure = plt.figure(figsize=(15,5))
         self.canvas = FigureCanvas(self.figure)
-        grid.addWidget(self.canvas,5,0,3,2)        
+        grid.addWidget(self.canvas,4,0,3,2)        
+        # self.show()
+
+        # self.h1figure = plt.figure(figsize=(15,5))
+        # self.h1canvas = FigureCanvas(self.h1figure)
+        # grid.addWidget(self.canvas,4,0,3,2)        
         self.show()
 
 
@@ -183,7 +188,8 @@ class Window(QWidget):
 
             #convert the hsv image back to the RGB form for display    
             output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            ax = self.figure.add_subplot(222)
+            #plot the image
+            ax = self.figure.add_subplot(122)
             ax.set_title("Gamma Corrected Image")
             plt.imshow(output)
             self.canvas.draw()
@@ -191,12 +197,14 @@ class Window(QWidget):
 
     def log_transform(self):
 
+        #user input for the C constant of the log functrion Clog(1+r)
         c_for_log,ok = QInputDialog.getDouble(self,"Log Transformation","Value of C")
 
         if ok:
 
+            #copy the present image to previous for undo option
             self.v_channel_prev = np.copy(self.v_channel)            
-            #maths equation   
+            #maths equation  for log tranform
             log_transformed_v = c_for_log*(np.log10(1 + self.v_channel))
             #need to convert the value to interger becuse log has decimal values
             log_transformed_v = log_transformed_v.astype(int)
@@ -211,7 +219,8 @@ class Window(QWidget):
 
             #convert the hsv image back to the RGB form for display
             output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            ax = self.figure.add_subplot(222)
+            #display the image
+            ax = self.figure.add_subplot(122)
             ax.set_title("Log Transformed Image")
             plt.imshow(output)
             self.canvas.draw()
@@ -219,34 +228,46 @@ class Window(QWidget):
 
     def hist_eq(self):
 
+        #copy the present image to previous for undo option
         self.v_channel_prev = np.copy(self.v_channel)            
-        #first displaying thr histogram of the original image
-        ax = self.figure.add_subplot(222)
-        ax.clear()
-        plt.hist(self.v_channel.ravel(),256,[0,256]);
-        ax.set_title("Histogram of Original Image")
-
+        #first displaying thr histogram of the previous image
+        # hax = self.h1figure.add_subplot(121)
+        # ax.clear()
+        # plt.hist(self.v_channel.ravel(),256,[0,256]);
+        # hax.set_title("Histogram of Previous Image")
+        # self.h1canvas.draw()
+        
         #lets do the histogram equalization
         histogram_output_v = histogram_eq(self.v_channel)
         
+        #normalize the outputs to the correect range in case they are out
+        #not required in histogram equalization though
         hist_max = histogram_output_v.max()
         histogram_output_v = histogram_output_v * 255/hist_max
         
+        #pass the changes to the hsv_image
         self.hsv_image[:,:,2] = histogram_output_v[:,:]
         self.v_channel = histogram_output_v[:,:]
 
         #convert the hsv image back to the RGB form for display
         output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-        ax = self.figure.add_subplot(224)
+        ax = self.figure.add_subplot(122)
         ax.set_title("Histogram Equalization Output")
         plt.imshow(output)
         
-        #histogram of the new image for comparison
-        ax = self.figure.add_subplot(223)
-        ax.clear()
-        plt.hist(self.v_channel.ravel(),256,[0,256]);
-        ax.set_title("Histogram of New Image")
-        # plt.show()
+        # #histogram of the new image for comparison
+        # ax = self.figure.add_subplot(224)
+        # ax.clear()
+        # plt.hist(self.v_channel.ravel(),256,[0,256]);
+        # ax.set_title("Histogram of New Image")
+        # # plt.show()
+
+        # #Shw the original image also
+        # self.hsv_image[:,:,2] = self.v_channel_orig[:,:]
+        # output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
+        # ax = self.figure.add_subplot(221)
+        # ax.set_title("Original Image")
+        # plt.imshow(output)
         self.canvas.draw()
 
 
@@ -257,14 +278,16 @@ class Window(QWidget):
         #if input is done
         if ok:   
 
+            #copy the present image to previous for undo option
             self.v_channel_prev = np.copy(self.v_channel)            
             #convert input to integer
             blur_size= int(blur_size)
 
             #construct the basic blurring filter of the given input size
             kernel = (1/np.power(blur_size,2))*np.ones((blur_size,blur_size))
-            #convol;ve the image with the blurring filter    
+            #convolve the image with the blurring filter    
             blurred_v = conv2D(self.v_channel,kernel)
+            #scale the values back to 0-255
             blur_max = blurred_v.max()
             blurred_v = blurred_v * 255/blur_max
 
@@ -278,7 +301,7 @@ class Window(QWidget):
             self.v_channel = blurred_v[:,:]
             #convert the hsv image back to the RGB form for display   
             output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            ax = self.figure.add_subplot(224)
+            ax = self.figure.add_subplot(122)
             ax.set_title("blurred Image")
             plt.imshow(output)
             self.canvas.draw()
@@ -293,7 +316,7 @@ class Window(QWidget):
             #ask for the sigma value of the gaussian function
             sigma,ok = QInputDialog.getDouble(self,"Gaussian Blur image","enter vale of sigma")
             if ok:   
-
+                #copy the present image to previous for undo option
                 self.v_channel_prev = np.copy(self.v_channel)            
                 #convert the entered values to intergres
                 kernel_size= int(kernel_size)
@@ -304,18 +327,21 @@ class Window(QWidget):
                 # print(kernel[2][2])
                 #do the convolution
                 blurred_v = conv2D(self.v_channel,kernel)
+                #scale to 0-255
                 blur_max = blurred_v.max()
                 blurred_v = blurred_v * 255/blur_max
 
+                #resizing the output, in convolution I have not done padding of the image    
                 x = self.v_channel.shape[0]
                 y = self.v_channel.shape[1]
                 blurred_v = cv2.resize(blurred_v,(y,x))
                 # print(blurred_v)
 
+                #pass the changes to the hsv_image
                 self.hsv_image[:,:,2] = blurred_v[:,:]
                 self.v_channel = blurred_v[:,:]
                 output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-                ax = self.figure.add_subplot(224)
+                ax = self.figure.add_subplot(122)
                 ax.set_title("Gaussian blurred Image")
                 plt.imshow(output)
                 self.canvas.draw()
@@ -329,60 +355,73 @@ class Window(QWidget):
         A_hboost,ok = QInputDialog.getInt(self,"Sharp image","enter A>1 for high boost sharpening")
 
         if ok:         
-
+            
             self.v_channel_prev = np.copy(self.v_channel)            
             #construct filter to compute the laplacian 
-            kernel = np.matrix([[-1,-1,-1],[-1,A_hboost + 8,-1],[-1,-1,-1]])
-            laplace_sharped_img = conv2D(self.v_channel,kernel)
-            laplace_sharped_img = neg_pixel(laplace_sharped_img)
-            
-            #sobel filter to calculate the first gradient in x direction
-            kernel = np.matrix([[-1,-2,-1],[0,0,0],[1,2,1]])
-            Gx = conv2D(self.v_channel,kernel)
-            Gx = np.absolute(Gx)
+            kernel = np.matrix([[-1,-1,-1],[-1,8,-1],[-1,-1,-1]])
+            laplace_sharped_v = conv2D(self.v_channel,kernel)
+            # laplace_sharped_v = neg_pixel(laplace_sharped_v)
+            min_intensity = laplace_sharped_v.min()
+            laplace_sharped_v = laplace_sharped_v - min_intensity
 
-            #sobel filter to calculate the first gradient in y direction
-            kernel = np.matrix([[-1,0,1],[-2,0,2],[-1,0,1]])
-            Gy = conv2D(self.v_channel,kernel)
-            Gy = np.absolute(Gy)
+            # #sobel filter to calculate the first gradient in x direction
+            # kernel = np.matrix([[-1,-2,-1],[0,0,0],[1,2,1]])
+            # Gx = conv2D(self.v_channel,kernel)
+            # Gx = np.absolute(Gx)
 
-            #add the gradients
-            gradient = Gx + Gy
+            # #sobel filter to calculate the first gradient in y direction
+            # kernel = np.matrix([[-1,0,1],[-2,0,2],[-1,0,1]])
+            # Gy = conv2D(self.v_channel,kernel)
+            # Gy = np.absolute(Gy)
 
-            #the sum of the sobel gradients needs to be blurred as discussed in the lecture
-            kernel = (1/9)*np.matrix([[1,1,1],[1,1,1],[1,1,1]])
-            smooth_gradient = conv2D(gradient,kernel)
-            smooth_gradient = gradient
+            # #add the gradients
+            # gradient = Gx + Gy
 
-            #resize the smooth gradient we computed to the original size so that we can multipky it with laplcian gradient image0
-            x = laplace_sharped_img.shape[0]
-            y = laplace_sharped_img.shape[1]
-            smooth_gradient = cv2.resize(smooth_gradient,(y,x))
-            max_smooth = smooth_gradient.max()
-            smooth_gradient = smooth_gradient * 255/max_smooth
+            # #the sum of the sobel gradients needs to be blurred as discussed in the lecture
+            # kernel = (1/9)*np.matrix([[1,1,1],[1,1,1],[1,1,1]])
+            # smooth_gradient = conv2D(gradient,kernel)
+            # smooth_gradient = gradient
 
-            #compute the final mask by multipling the 2 images
-            sharp_mask = np.multiply(smooth_gradient,laplace_sharped_img)
-            max_mask = sharp_mask.max()
-            sharp_mask = sharp_mask * 255/max_mask
+            # #resize the smooth gradient we computed to the original size so that we can multipky it with laplcian gradient image0
+            # x = laplace_sharped_img.shape[0]
+            # y = laplace_sharped_img.shape[1]
+            # smooth_gradient = cv2.resize(smooth_gradient,(y,x))
+            # max_smooth = smooth_gradient.max()
+            # smooth_gradient = smooth_gradient * 255/max_smooth
+
+            # #compute the final mask by multipling the 2 images
+            # sharp_mask = np.multiply(smooth_gradient,laplace_sharped_img)
+            # max_mask = sharp_mask.max()
+            # sharp_mask = sharp_mask * 255/max_mask
+
+            # #resize the msk to the input image shape
+            # x = self.v_channel.shape[0]
+            # y = self.v_channel.shape[1]
+            # sharp_mask = cv2.resize(sharp_mask,(y,x))   
+
+            # #add the mask and the input image
+            # output_sharp = self.v_channel + sharp_mask
+            # #apply power law transforms for more bttr results    
+            # output_sharp_transformed = gamma_correction(output_sharp,0.6)
+            # out_max = output_sharp_transformed.max()
+            # output_sharp_transformed = output_sharp_transformed * 255/out_max
 
             #resize the msk to the input image shape
             x = self.v_channel.shape[0]
             y = self.v_channel.shape[1]
-            sharp_mask = cv2.resize(sharp_mask,(y,x))   
+            laplace_sharped_v = cv2.resize(laplace_sharped_v,(y,x))   
 
-            #add the mask and the input image
-            output_sharp = self.v_channel + sharp_mask
-            #apply power law transforms for more bttr results    
-            output_sharp_transformed = gamma_correction(output_sharp,0.6)
-            out_max = output_sharp_transformed.max()
-            output_sharp_transformed = output_sharp_transformed * 255/out_max
+            laplace_sharped_v = laplace_sharped_v + A_hboost*self.v_channel
+            lap_max = laplace_sharped_v.max()
+            laplace_sharped_v = laplace_sharped_v * 255/lap_max
 
-            self.hsv_image[:,:,2] = smooth_gradient[:,:]
-            self.v_channel = output_sharp_transformed[:,:]
+            # laplace_sharped_v = laplace_sharped_v + self.v_channel
+
+            self.hsv_image[:,:,2] = laplace_sharped_v[:,:]
+            self.v_channel = laplace_sharped_v[:,:]
 
             output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            ax = self.figure.add_subplot(111)
+            ax = self.figure.add_subplot(122)
             ax.set_title("sharpened Image")
             plt.imshow(output)
 
@@ -395,16 +434,18 @@ class Window(QWidget):
 
         self.hsv_image[:,:,2] = np.copy(self.v_channel[:,:])
         output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-        ax = self.figure.add_subplot(222)
+        ax = self.figure.add_subplot(122)
         ax.set_title("Previous Image")
         plt.imshow(output)
         self.canvas.draw()
 
     def restore(self):
 
-        self.hsv_image[:,:,2] = np.copy(self.v_channel_orig[:,:])
+        self.v_channel_prev = np.copy(self.v_channel)
+        self.v_channel = np.copy(self.v_channel_orig)            
+        self.hsv_image[:,:,2] = np.copy(self.v_channel[:,:])
         output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-        ax = self.figure.add_subplot(222)
+        ax = self.figure.add_subplot(122)
         ax.set_title("Original Image")
         plt.imshow(output)
         self.canvas.draw()

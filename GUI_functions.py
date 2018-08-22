@@ -68,6 +68,7 @@ def gamma_correction(image,val_gamma):
 
 def histogram_eq(image):
 
+    image = image.astype(int)
     #first compute the frequncies of each of the intensity levels
     #made a list size 256 for storing the number of times each intensity value occured
     #index of list corresponds to the value of intensity
