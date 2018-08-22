@@ -39,7 +39,8 @@ class Window(QWidget):
 
     def __init__(self):
         
-        super(Window, self).__init__()
+        #defining a window for the gui        
+        super(Window, self).__init__() 
         #Window x_cord,y_cord; Window size
         self.setGeometry(50, 50, 5000, 3000)
         #window heading
@@ -50,61 +51,82 @@ class Window(QWidget):
         self.setLayout(grid)
 
         #defining button for loading an image
+        #name of the button
         btn_load = QPushButton("load_img", self)
+        #function to call when the button is pressed
         btn_load.clicked.connect(self.load_image)
+        #size of the button
         btn_load.resize(5,5)
+        #add the button to the layout
         grid.addWidget(btn_load,0,0)
 
         #defining button for gamma correction
+        #name of the button
         btn_gamma = QPushButton("Gamma Correcn", self)
         val_gamma = btn_gamma.clicked.connect(self.load_gamma)
         btn_gamma.resize(5,5)
         grid.addWidget(btn_gamma,0,1)
 
         #defining button for Log Transform
+        #name of the button
         btn_log = QPushButton("Log Transform", self)
+        #function to call when the button is pressed
         btn_log.clicked.connect(self.log_transform)
         btn_log.resize(5,5)
         grid.addWidget(btn_log,1,0)
 
         #defining button for histogram Equalization
+        #name of the button
         btn_hist = QPushButton("Histogram Eq", self)
+        #function to call when the button is pressed
         btn_hist.clicked.connect(self.hist_eq)
         btn_hist.resize(5,5)
         grid.addWidget(btn_hist,1,1)
 
         #defining button for BLURR IMG
+        #name of the button
         btn_blur = QPushButton("blur img", self)
+        #function to call when the button is pressed
         btn_blur.clicked.connect(self.blur_img)
         btn_blur.resize(5,5)
         grid.addWidget(btn_blur,2,0)
 
         #defining button for GAUSSIAN bLUR
+        #name of the button
         btn_sharp = QPushButton("gaussian blur", self)
+        #function to call when the button is pressed
         btn_sharp.clicked.connect(self.gaussian_blur)
         btn_sharp.resize(5,5)
         grid.addWidget(btn_sharp,2,1)
 
         #defining button for sharpening
+        #name of the button
         btn_sharp = QPushButton("sharp img", self)
+        #function to call when the button is pressed
         btn_sharp.clicked.connect(self.sharp_img)
         btn_sharp.resize(5,5)
         grid.addWidget(btn_sharp,3,0)
 
         #defining button for go back to previous state
+        #name of the button
         btn_sharp = QPushButton("Undo", self)
+        #function to call when the button is pressed
         btn_sharp.clicked.connect(self.undo_prev)
         btn_sharp.resize(5,5)
         grid.addWidget(btn_sharp,3,1)
 
         #defining button for go back to original state
+        #name of the button
         btn_sharp = QPushButton("Restore Original", self)
+        #function to call when the button is pressed
         btn_sharp.clicked.connect(self.restore)
         btn_sharp.resize(5,5)
         grid.addWidget(btn_sharp,4,0)
 
         #defining button for storing thre image
+        #name of the button
         btn_sharp = QPushButton("Save Image", self)
+        #function to call when the button is pressed
         btn_sharp.clicked.connect(self.save_image)
         btn_sharp.resize(5,5)
         grid.addWidget(btn_sharp,4,1)
@@ -118,29 +140,36 @@ class Window(QWidget):
 
     def load_image(self):
 
-
+        #popup the file explorere box, extract th file name
         filename = QFileDialog.getOpenFileName(self,'select')
-        print(filename[0])
+        # print(filename[0])
 
+        #read the selected file using mpimg
         self.original_image = mpimg.imread(str(filename[0]),1)
         # self.original_image = cv2.resize(self.original_image,(256,256))
+        #convert the image to HSV, we will make changes only in the v channel of teh image
         self.hsv_image = cv2.cvtColor(self.original_image,cv2.COLOR_BGR2HSV)
+        #extract the v_channel of the image for applying the transformations
         self.v_channel = self.hsv_image[:,:,2]
+        #store the original image in another varibale, we may need in future to revert abck to original image
         self.v_channel_orig = np.copy(self.v_channel)
 
 
-        print(self.original_image.shape)
-        ax = self.figure.add_subplot(221)
+        # print(self.original_image.shape)
+        #show the loaded image in a subplot
+        ax = self.figure.add_subplot(121)
+        #give a title to the image
         ax.set_title("Original Image")
         plt.imshow(self.original_image)
         self.canvas.draw()
 
 
     def load_gamma(self):
-
+        #take the input value from the user for gamma
         gamma,ok = QInputDialog.getDouble(self,"Gamma Correction","Value of Gamma")
 
         if ok:
+            #copy the present image into previous image variable for undo option
             self.v_channel_prev = np.copy(self.v_channel)
             # pass the v_channel to the gamma correction function    
             gamma_corr_v = gamma_correction(self.v_channel,gamma)
