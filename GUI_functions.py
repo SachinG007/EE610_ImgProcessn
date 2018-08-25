@@ -34,23 +34,25 @@ def conv2D(image,kernel):
 
     img_width = image.shape[0]
     img_height = image.shape[1]
+    conv_image = np.zeros((img_width,img_height))
 
     #padding the image by a fixed size of 1 
     #willlead to smaller size output 
     #but seems to me better then having outputs of same size but black border
-    conv_image = np.zeros((img_width - ker_x + 1,img_height - ker_y + 1))
+    pad_image = np.pad(image,kerx_by2,'constant',constant_values=0)
+
 
     # print(image[3][3])
     # pad_image = cv2.copyMakeBorder(image, kery_by2,kery_by2,kerx_by2,kerx_by2, cv2.BORDER_DEFAULT, value = 0)
     # pad_image = cv2.copyMakeBorder(image, 0,0,0,0, cv2.BORDER_DEFAULT, value = 0)
-    pad_image = image
+    # pad_image = image
 
     # print("pad_img shape : " )
     # print(pad_image.shape)
 
     #now we run our kernel over each of the pixel of the input image to calculate the output
-    for i in range(0 + kerx_by2 , img_width - kerx_by2 ):
-        for j in range(0 + kery_by2, img_height - kery_by2 ):
+    for i in range(0 + kerx_by2 , img_width + kerx_by2):
+        for j in range(0 + kery_by2, img_height + kery_by2 ):
 
             #extract the patch of the input image overlapping the kernel in its curent position
             current_patch = pad_image[i-kerx_by2 : i+kerx_by2+1 , j-kery_by2 : j+kery_by2+1]
@@ -109,6 +111,7 @@ def neg_pixel(image):
 
     #function made to take care of teh issues when image has negative pixel values
     min_intensity = image.min()
+    print(min_intensity)
     image = image - min_intensity
     max_intensity = image.max()
 

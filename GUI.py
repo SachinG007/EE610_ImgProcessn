@@ -352,73 +352,33 @@ class Window(QWidget):
     def sharp_img(self):
 
         #ask for the value of A
-        A_hboost,ok = QInputDialog.getInt(self,"Sharp image","enter A>1 for high boost sharpening")
+        A_hboost,ok = QInputDialog.getDouble(self,"Sharp image","enter A>1 for high boost sharpening")
 
         if ok:         
             
             self.v_channel_prev = np.copy(self.v_channel)            
             #construct filter to compute the laplacian 
-            kernel = np.matrix([[-1,-1,-1],[-1,8,-1],[-1,-1,-1]])
-            laplace_sharped_v = conv2D(self.v_channel,kernel)
-            # laplace_sharped_v = neg_pixel(laplace_sharped_v)
-            min_intensity = laplace_sharped_v.min()
-            laplace_sharped_v = laplace_sharped_v - min_intensity
+            # kernel = gen_gaussian(5,3)
+            kernel = 1/9*np.ones((3,3))
+            blurred_v = conv2D(self.v_channel,kernel)
+            blurred_v = blurred_v.astype(np.uint8)
+            self.v_channel = self.v_channel.astype(np.uint8)
+            # mask = self.v_channel - blurred_v
+            # import pdb;pdb.set_trace()
+            mask = A_hboost * cv2.subtract(self.v_channel,blurred_v)
+            mask = mask.astype(np.uint8)
+            # self.v_channel
+            sharp_v = cv2.add(self.v_channel,mask)
+            sharp_v = sharp_v.astype(np.uint8)
+            # sharp_v = self.v_channel + mask
+            # sharp_v = neg_pixel(sharp_v)
+            # sharp_v = sharp_v.clip(min=0)
+            # import pdb;pdb.set_trace()
+            # sharp_v_max = sharp_v.max()
+            # sharp_v = sharp_v * 255/sharp_v_max
 
-            # #sobel filter to calculate the first gradient in x direction
-            # kernel = np.matrix([[-1,-2,-1],[0,0,0],[1,2,1]])
-            # Gx = conv2D(self.v_channel,kernel)
-            # Gx = np.absolute(Gx)
-
-            # #sobel filter to calculate the first gradient in y direction
-            # kernel = np.matrix([[-1,0,1],[-2,0,2],[-1,0,1]])
-            # Gy = conv2D(self.v_channel,kernel)
-            # Gy = np.absolute(Gy)
-
-            # #add the gradients
-            # gradient = Gx + Gy
-
-            # #the sum of the sobel gradients needs to be blurred as discussed in the lecture
-            # kernel = (1/9)*np.matrix([[1,1,1],[1,1,1],[1,1,1]])
-            # smooth_gradient = conv2D(gradient,kernel)
-            # smooth_gradient = gradient
-
-            # #resize the smooth gradient we computed to the original size so that we can multipky it with laplcian gradient image0
-            # x = laplace_sharped_img.shape[0]
-            # y = laplace_sharped_img.shape[1]
-            # smooth_gradient = cv2.resize(smooth_gradient,(y,x))
-            # max_smooth = smooth_gradient.max()
-            # smooth_gradient = smooth_gradient * 255/max_smooth
-
-            # #compute the final mask by multipling the 2 images
-            # sharp_mask = np.multiply(smooth_gradient,laplace_sharped_img)
-            # max_mask = sharp_mask.max()
-            # sharp_mask = sharp_mask * 255/max_mask
-
-            # #resize the msk to the input image shape
-            # x = self.v_channel.shape[0]
-            # y = self.v_channel.shape[1]
-            # sharp_mask = cv2.resize(sharp_mask,(y,x))   
-
-            # #add the mask and the input image
-            # output_sharp = self.v_channel + sharp_mask
-            # #apply power law transforms for more bttr results    
-            # output_sharp_transformed = gamma_correction(output_sharp,0.6)
-            # out_max = output_sharp_transformed.max()
-            # output_sharp_transformed = output_sharp_transformed * 255/out_max
-
-            #resize the msk to the input image shape
-            x = self.v_channel.shape[0]
-            y = self.v_channel.shape[1]
-            laplace_sharped_v = cv2.resize(laplace_sharped_v,(y,x))   
-
-            laplace_sharped_v = laplace_sharped_v + A_hboost*self.v_channel
-            lap_max = laplace_sharped_v.max()
-            laplace_sharped_v = laplace_sharped_v * 255/lap_max
-
-            # laplace_sharped_v = laplace_sharped_v + self.v_channel
-
-            self.hsv_image[:,:,2] = laplace_sharped_v[:,:]
-            self.v_channel = laplace_sharped_v[:,:]
+            self.hsv_image[:,:,2] = sharp_v[:,:]
+            self.v_channel = sharp_v[:,:]
 
             output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
             ax = self.figure.add_subplot(122)
