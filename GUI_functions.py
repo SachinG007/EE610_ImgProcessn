@@ -41,15 +41,6 @@ def conv2D(image,kernel):
     #but seems to me better then having outputs of same size but black border
     pad_image = np.pad(image,kerx_by2,'constant',constant_values=0)
 
-
-    # print(image[3][3])
-    # pad_image = cv2.copyMakeBorder(image, kery_by2,kery_by2,kerx_by2,kerx_by2, cv2.BORDER_DEFAULT, value = 0)
-    # pad_image = cv2.copyMakeBorder(image, 0,0,0,0, cv2.BORDER_DEFAULT, value = 0)
-    # pad_image = image
-
-    # print("pad_img shape : " )
-    # print(pad_image.shape)
-
     #now we run our kernel over each of the pixel of the input image to calculate the output
     for i in range(0 + kerx_by2 , img_width + kerx_by2):
         for j in range(0 + kery_by2, img_height + kery_by2 ):
