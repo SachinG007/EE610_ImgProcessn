@@ -75,6 +75,7 @@ def histogram_eq(image):
     #made a list size 256 for storing the number of times each intensity value occured
     #index of list corresponds to the value of intensity
     intensity_freq = np.zeros((256,1))
+    intensity_freq_output = np.zeros((256,1))
 
     #filling up the intensity freq list 
     for i in range(0,image.shape[0]):
@@ -103,8 +104,14 @@ def histogram_eq(image):
         for q in range(0,image.shape[1]):
             hist_eq_output_image[p][q] = cumulative_freq_norm[image[p][q]]
 
+    for i in range(0,image.shape[0]):
+        for j in range(0,image.shape[1]):
+            intensity_val = hist_eq_output_image[i][j]
+            intensity_val = intensity_val.astype(int)
+            intensity_freq_output[intensity_val] = intensity_freq_output[intensity_val] + 1;
 
-    return hist_eq_output_image
+
+    return hist_eq_output_image, intensity_freq, intensity_freq_output
 
 
 def neg_pixel(image):

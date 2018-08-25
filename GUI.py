@@ -49,6 +49,8 @@ class Window(QWidget):
         #define grid for auto layout setting, this makes managing the window quite easy 
         grid = QGridLayout()
         self.setLayout(grid)
+        self.name = " "
+        self.hist = 0
 
         #defining button for loading an image
         #name of the button
@@ -162,6 +164,7 @@ class Window(QWidget):
 
         # print(self.original_image.shape)
         #show the loaded image in a subplot
+        plt.clf()
         ax = self.figure.add_subplot(121)
         #give a title to the image
         ax.set_title("Original Image")
@@ -184,15 +187,10 @@ class Window(QWidget):
             #update the v channel
             self.v_channel = gamma_corr_v[:,:]
             #update teh v_channel in the hsv image
-            self.hsv_image[:,:,2] = self.v_channel[:,:]
 
-            #convert the hsv image back to the RGB form for display    
-            output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            #plot the image
-            ax = self.figure.add_subplot(122)
-            ax.set_title("Gamma Corrected Image")
-            plt.imshow(output)
-            self.canvas.draw()
+            self.name = "Gamma Corrected Image"
+            self.hist = 0
+            self.display_output()
 
 
     def log_transform(self):
@@ -205,40 +203,31 @@ class Window(QWidget):
             #copy the present image to previous for undo option
             self.v_channel_prev = np.copy(self.v_channel)            
             #maths equation  for log tranform
-            log_transformed_v = c_for_log*(np.log10(1 + self.v_channel))
+            log_transformed_v = (np.log10(1 + self.v_channel))
             #need to convert the value to interger becuse log has decimal values
             log_transformed_v = log_transformed_v.astype(int)
             #scale bacak to 0-255
             log_max = log_transformed_v.max()
             log_transformed_v = log_transformed_v * 255/log_max
+            log_transformed_v = c_for_log*log_transformed_v
             #take care of the negative pixel values
             log_transformed_v = neg_pixel(log_transformed_v)
             #add the cahnges to the hsv_image
-            self.hsv_image[:,:,2] = log_transformed_v[:,:]
             self.v_channel = log_transformed_v[:,:]
-
-            #convert the hsv image back to the RGB form for display
-            output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            #display the image
-            ax = self.figure.add_subplot(122)
-            ax.set_title("Log Transformed Image")
-            plt.imshow(output)
-            self.canvas.draw()
+            self.name = "Log Transformed Image"
+            self.hist = 0
+            self.display_output()
 
 
     def hist_eq(self):
 
         #copy the present image to previous for undo option
         self.v_channel_prev = np.copy(self.v_channel)            
-        #first displaying thr histogram of the previous image
-        # hax = self.h1figure.add_subplot(121)
-        # ax.clear()
-        # plt.hist(self.v_channel.ravel(),256,[0,256]);
-        # hax.set_title("Histogram of Previous Image")
-        # self.h1canvas.draw()
         
         #lets do the histogram equalization
-        histogram_output_v = histogram_eq(self.v_channel)
+        histogram_output_v, intensity_freq, intensity_freq_output = histogram_eq(self.v_channel)
+        self.intensity_freq = intensity_freq
+        self.intensity_freq_output = intensity_freq_output
         
         #normalize the outputs to the correect range in case they are out
         #not required in histogram equalization though
@@ -246,29 +235,11 @@ class Window(QWidget):
         histogram_output_v = histogram_output_v * 255/hist_max
         
         #pass the changes to the hsv_image
-        self.hsv_image[:,:,2] = histogram_output_v[:,:]
         self.v_channel = histogram_output_v[:,:]
+        self.name = "Histogram Equalized Image"
 
-        #convert the hsv image back to the RGB form for display
-        output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-        ax = self.figure.add_subplot(122)
-        ax.set_title("Histogram Equalization Output")
-        plt.imshow(output)
-        
-        # #histogram of the new image for comparison
-        # ax = self.figure.add_subplot(224)
-        # ax.clear()
-        # plt.hist(self.v_channel.ravel(),256,[0,256]);
-        # ax.set_title("Histogram of New Image")
-        # # plt.show()
-
-        # #Shw the original image also
-        # self.hsv_image[:,:,2] = self.v_channel_orig[:,:]
-        # output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-        # ax = self.figure.add_subplot(221)
-        # ax.set_title("Original Image")
-        # plt.imshow(output)
-        self.canvas.draw()
+        self.hist = 1
+        self.display_output()
 
 
     def blur_img(self):
@@ -296,15 +267,11 @@ class Window(QWidget):
             y = self.v_channel.shape[1]
             blurred_v = cv2.resize(blurred_v,(y,x))
             # print(blurred_v)
-
-            self.hsv_image[:,:,2] = blurred_v[:,:]
             self.v_channel = blurred_v[:,:]
-            #convert the hsv image back to the RGB form for display   
-            output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            ax = self.figure.add_subplot(122)
-            ax.set_title("blurred Image")
-            plt.imshow(output)
-            self.canvas.draw()
+            self.name = "Blurred Image"
+            self.hist = 0
+            self.display_output()
+
 
     def gaussian_blur(self):
 
@@ -338,15 +305,10 @@ class Window(QWidget):
                 # print(blurred_v)
 
                 #pass the changes to the hsv_image
-                self.hsv_image[:,:,2] = blurred_v[:,:]
                 self.v_channel = blurred_v[:,:]
-                output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-                ax = self.figure.add_subplot(122)
-                ax.set_title("Gaussian blurred Image")
-                plt.imshow(output)
-                self.canvas.draw()
-
-
+                self.name = "Gaussian Blurred Image"
+                self.hist = 0
+                self.display_output()
 
 
     def sharp_img(self):
@@ -370,51 +332,80 @@ class Window(QWidget):
             # self.v_channel
             sharp_v = cv2.add(self.v_channel,mask)
             sharp_v = sharp_v.astype(np.uint8)
-            # sharp_v = self.v_channel + mask
-            # sharp_v = neg_pixel(sharp_v)
-            # sharp_v = sharp_v.clip(min=0)
-            # import pdb;pdb.set_trace()
-            # sharp_v_max = sharp_v.max()
-            # sharp_v = sharp_v * 255/sharp_v_max
 
-            self.hsv_image[:,:,2] = sharp_v[:,:]
             self.v_channel = sharp_v[:,:]
-
-            output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-            ax = self.figure.add_subplot(122)
-            ax.set_title("sharpened Image")
-            plt.imshow(output)
-
-            self.canvas.draw()
+            self.name = "Sharpened Image"
+            self.hist = 0
+            self.display_output()
 
     def undo_prev(self):
         self.v_channel_prev_temp = np.copy(self.v_channel_prev)
         self.v_channel_prev = np.copy(self.v_channel)
         self.v_channel = np.copy(self.v_channel_prev_temp)            
 
-        self.hsv_image[:,:,2] = np.copy(self.v_channel[:,:])
-        output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-        ax = self.figure.add_subplot(122)
-        ax.set_title("Previous Image")
-        plt.imshow(output)
-        self.canvas.draw()
+        self.name = "Previous Image"
+        self.hist = 0
+        self.display_output()
+
 
     def restore(self):
 
         self.v_channel_prev = np.copy(self.v_channel)
         self.v_channel = np.copy(self.v_channel_orig)            
-        self.hsv_image[:,:,2] = np.copy(self.v_channel[:,:])
-        output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
-        ax = self.figure.add_subplot(122)
-        ax.set_title("Original Image")
-        plt.imshow(output)
-        self.canvas.draw()
+        self.name = "Original Image"
+        self.hist = 0
+        self.display_output()
+
 
     def save_image(self):
 
         self.hsv_image[:,:,2] = self.v_channel[:,:]
         output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2RGB)
         cv2.imwrite("Current Image.jpg",output)
+
+    def display_output(self):
+
+        self.hsv_image[:,:,2] = self.v_channel_orig[:,:]
+        orig = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
+
+        self.hsv_image[:,:,2] = self.v_channel[:,:]
+        output = cv2.cvtColor(self.hsv_image,cv2.COLOR_HSV2BGR)
+
+
+        if(self.hist == 0):
+            plt.clf()
+
+            ax = self.figure.add_subplot(122)
+            ax.set_title(self.name)
+            plt.imshow(output)
+
+            ax = self.figure.add_subplot(121)
+            ax.set_title("Original Image")
+            plt.imshow(orig)
+
+            self.canvas.draw()
+
+        else:
+
+
+            plt.clf()
+            ax = self.figure.add_subplot(222)
+            ax.set_title(self.name)
+            plt.imshow(output)
+
+            ax = self.figure.add_subplot(221)
+            ax.set_title("Original Image")
+            plt.imshow(orig)
+
+            plt.subplot(223); plt.plot(self.intensity_freq, linewidth=0.5); plt.xlabel('Intensity'); plt.ylabel('Count of Pixels'); plt.grid(True)
+            plt.subplot(224); plt.plot(self.intensity_freq_output, linewidth=0.5); plt.xlabel('Intensity'); plt.ylabel('Count of Pixels'); plt.grid(True)
+            plt.suptitle('Comparison of Original vs Equalized Histograms')
+            # plt.show()
+
+            self.canvas.draw()
+
+
+
 
 def run():
     app = QApplication(sys.argv)
