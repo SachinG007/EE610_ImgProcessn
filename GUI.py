@@ -220,15 +220,17 @@ class Window(QWidget):
             #copy the present image to previous for undo option
             self.v_channel_prev = np.copy(self.v_channel)            
             #maths equation  for log tranform
-            log_transformed_v = (np.log10(1 + self.v_channel))
+            log_transformed_v = (np.log(1 + self.v_channel))
             #need to convert the value to interger becuse log has decimal values
-            log_transformed_v = log_transformed_v.astype(int)
+            # log_transformed_v = log_transformed_v.astype(int)
             #scale bacak to 0-255
+            # log_transformed_v = log_transformed_v.clip(min = 0)
             log_max = log_transformed_v.max()
             log_transformed_v = log_transformed_v * 255/log_max
             log_transformed_v = c_for_log*log_transformed_v
+            log_transformed_v = log_transformed_v.astype(np.uint8)
             #take care of the negative pixel values
-            log_transformed_v = neg_pixel(log_transformed_v)
+            # log_transformed_v = log_transformed_v.clip(min = 0)
             #add the cahnges to the hsv_image
             self.v_channel = log_transformed_v[:,:]
             self.name = "Log Transformed Image"
@@ -452,8 +454,8 @@ class Window(QWidget):
             ax.set_title("Original Image")
             plt.imshow(orig)
 
-            plt.subplot(223); plt.plot(self.intensity_freq, linewidth=0.5); plt.xlabel('Intensity'); plt.ylabel('Count of Pixels'); plt.grid(True)
-            plt.subplot(224); plt.plot(self.intensity_freq_output, linewidth=0.5); plt.xlabel('Intensity'); plt.ylabel('Count of Pixels'); plt.grid(True)
+            plt.subplot(223); plt.plot(self.intensity_freq, linewidth=0.5); plt.xlabel('Intensity'); plt.ylabel('Count of Pixels'); plt.grid()
+            plt.subplot(224); plt.plot(self.intensity_freq_output, linewidth=0.5); plt.xlabel('Intensity'); plt.ylabel('Count of Pixels'); plt.grid()
             plt.suptitle('Comparison of Original vs Equalized Histograms')
             # plt.show()
 
