@@ -9,9 +9,11 @@ import matplotlib.image as mpimg
 from scipy.signal import butter, lfilter, freqz
 
 # Filter requirements.
-order = 5
-fs = 1000.0       # sample rate, Hz
-cutoff = 400  # desired cutoff frequency of the filter, Hz
+order = 10
+fs = 10000.0       # sample rate, Hz
+cutoff = 430  # desired cutoff frequency of the filter, Hz
+cutoff_radius = 70
+r_sq = cutoff_radius**2
 
 def psnr(img1, img2):	#input,output
     mse = np.mean( (img1 - img2) ** 2 ).astype(float)
@@ -30,42 +32,55 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
     y = lfilter(b, a, data)
     return y
 
-def deblur(blur_img, kernel):
+def deblur(blur_img, kernel,shift_fft_mat):
+
+	blur_img = blur_img.astype(float)
+	kernel = kernel.astype(float)
 
 	rows,cols= np.shape(blur_img)
-	pad_blur_img = np.zeros((2*rows, 2*cols), np.float64)
-	pad_blur_img[0:blur_img.shape[0], 0:blur_img.shape[1]] = blur_img[:,:]
-	rows,cols = np.shape(pad_blur_img)
+	kernel = cv2.resize(kernel,(cols,rows))
 
-	for i in range(rows):
-		for j in range(cols):
-			if((i+j)%2 == 1):
-				pad_blur_img[i,j] = pad_blur_img[i,j] * (-1)
+
+	pad_blur_img = np.zeros((2*rows, 2*cols), np.float64)
+	pad_kernel = np.zeros((2*rows, 2*cols), np.float64)
+	pad_blur_img[0:blur_img.shape[0], 0:blur_img.shape[1]] = blur_img[:,:]
+	pad_kernel[0:blur_img.shape[0], 0:blur_img.shape[1]] = kernel[:,:]
+	# pad_kernel = cv2.resize(kernel,(2*cols,2*rows))
+
+	# for i in range(rows):
+	# 	for j in range(cols):
+	# 		if((i+j)%2 == 1):
+	# 			pad_blur_img[i,j] = pad_blur_img[i,j] * (-1)
+
+	pad_blur_img = np.multiply(pad_blur_img,shift_fft_mat)
+	pad_kernel = np.multiply(pad_kernel,shift_fft_mat)
+
+
 
 	#resize the kernel to the size of the gt image
-	kernel = cv2.resize(kernel,(cols,rows))
+	# kernel = cv2.resize(kernel,(cols,rows))
 
 	#taking the respective DFTs
 	fft_blur_img = np.fft.fft2(pad_blur_img)
-	fft_kernel = np.fft.fft2(kernel)
+	fft_kernel = np.fft.fft2(pad_kernel)
 	# fft_kernel = np.fft.fftshift(fft_kernel)
 	# fft_kernel = fft_kernel + 0.000001
 
-	output = np.divide(fft_blur_img,np.abs(fft_kernel))
-	output = output - butter_lowpass_filter(output, cutoff, fs, order)
-	# r,c = np.shape(output)
-	# for i in range(500,r):
-	# 	for j in range(500,c):
-	# 		output[i,j]= 0;
+	output = np.divide(fft_blur_img,fft_kernel)
+	# output = output - butter_lowpass_filter(output, cutoff, fs, order) 
+	r,c = np.shape(output)
+	c0 = r/2
+	c1= c/2
+	for i in range(r):
+		for j in range(c):
+			if ((i-c0)**2 + (j-c1)**2 < r_sq):
+				output[i,j]= fft_blur_img[i,j];
 
 
 	output = np.fft.ifft2(output)
 	output = (np.real(output)).astype(float)
 
-	for i in range(rows):
-		for j in range(cols):
-			if((i+j)%2 == 1):
-				output[i,j] = output[i,j] * (-1)
+	output = np.multiply(output,shift_fft_mat)
 
 	crop_output = output[0:blur_img.shape[0], 0:blur_img.shape[1]]
 
@@ -74,20 +89,29 @@ def deblur(blur_img, kernel):
 
 blur_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/blurred1.png",1) #load the blurred image
 cv2.imshow("blurred_image", blur_img)
+blur_img = blur_img.astype(float)
 Rch,Gch,Bch = cv2.split(blur_img);	#split the image into the respective channels
 
-kernel= cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/kernel1b.png",1) #load the blurring filter 1 
-cv2.imshow("kernel", kernel)
-R_ker,G_ker,B_ker = cv2.split(kernel); #split the kernel into the respective channels
+row_b,cols_b,chan = np.shape(blur_img)
+shift_fft_mat = np.ones((2*row_b,2*cols_b))
+for i in range(2*row_b):
+	for j in range(2*cols_b):
+		if((i+j)%2 == 1):
+			shift_fft_mat[i,j] = shift_fft_mat[i,j] * (-1)
 
-R_deblur = deblur(Rch,R_ker)
+kernel= cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/kernel1b.png",1) #load the blurring filter 1 
+R_ker,G_ker,B_ker = cv2.split(kernel); #split the kernel into the respective channels
+kernel = kernel.astype(float)
+
+R_deblur = deblur(Rch,R_ker,shift_fft_mat)
 R_deblur = R_deblur/np.max(R_deblur)
-G_deblur = deblur(Gch,G_ker)
+G_deblur = deblur(Gch,G_ker,shift_fft_mat)
 G_deblur = G_deblur/np.max(G_deblur)
-B_deblur = deblur(Bch,B_ker)
+B_deblur = deblur(Bch,B_ker,shift_fft_mat)
 B_deblur = B_deblur/np.max(B_deblur)
 
 deblur_img = cv2.merge([R_deblur,G_deblur,B_deblur])
+deblur_img = deblur_img.astype(float)
 # import pdb;pdb.set_trace()
 out_psnr = psnr(blur_img,deblur_img)
 print(out_psnr)
