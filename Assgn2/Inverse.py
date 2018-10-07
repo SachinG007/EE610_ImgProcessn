@@ -75,9 +75,12 @@ def deblur(blur_img, kernel,shift_fft_mat):
 
 	return crop_output
 
+orig_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/original1.jpg",1) #load the blurred image
+orig_img = orig_img.astype(float)
+Rch_orig,Gch_orig,Bch_orig = cv2.split(orig_img);	#split the image into the respective channels
 
 blur_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/blurred1.png",1) #load the blurred image
-cv2.imshow("blurred_image", blur_img)
+# cv2.imshow("blurred_image", blur_img)
 blur_img = blur_img.astype(float)
 Rch,Gch,Bch = cv2.split(blur_img);	#split the image into the respective channels
 
