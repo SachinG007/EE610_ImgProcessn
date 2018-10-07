@@ -12,7 +12,7 @@ from scipy.signal import butter, lfilter, freqz
 order = 10
 fs = 10000.0       # sample rate, Hz
 cutoff = 430  # desired cutoff frequency of the filter, Hz
-cutoff_radius = 70
+cutoff_radius = 200
 r_sq = cutoff_radius**2
 
 def psnr(img1, img2):	#input,output
@@ -45,29 +45,18 @@ def deblur(blur_img, kernel,shift_fft_mat):
 	pad_kernel = np.zeros((2*rows, 2*cols), np.float64)
 	pad_blur_img[0:blur_img.shape[0], 0:blur_img.shape[1]] = blur_img[:,:]
 	pad_kernel[0:blur_img.shape[0], 0:blur_img.shape[1]] = kernel[:,:]
-	# pad_kernel = cv2.resize(kernel,(2*cols,2*rows))
-
-	# for i in range(rows):
-	# 	for j in range(cols):
-	# 		if((i+j)%2 == 1):
-	# 			pad_blur_img[i,j] = pad_blur_img[i,j] * (-1)
 
 	pad_blur_img = np.multiply(pad_blur_img,shift_fft_mat)
 	pad_kernel = np.multiply(pad_kernel,shift_fft_mat)
 
 
 
-	#resize the kernel to the size of the gt image
-	# kernel = cv2.resize(kernel,(cols,rows))
-
 	#taking the respective DFTs
 	fft_blur_img = np.fft.fft2(pad_blur_img)
 	fft_kernel = np.fft.fft2(pad_kernel)
-	# fft_kernel = np.fft.fftshift(fft_kernel)
-	# fft_kernel = fft_kernel + 0.000001
 
 	output = np.divide(fft_blur_img,fft_kernel)
-	# output = output - butter_lowpass_filter(output, cutoff, fs, order) 
+
 	r,c = np.shape(output)
 	c0 = r/2
 	c1= c/2
