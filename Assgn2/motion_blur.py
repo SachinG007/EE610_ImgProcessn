@@ -96,7 +96,7 @@ def constrained_ls(fft_kernel, fft_blur_img, fft_p):
 
 def deblur(blur_img, kernel):
 
-    p = [[0 , -1 , 0 ],[-1 , 4 ,-1],[0,-1,0]]
+    p = [[0.001 , 0.001 , 0.001, 0.001, 0.001 ],[0 , 1 ,1,1,0],[1,0.001,0.001,0.001,1]]
     rows, cols = np.shape(blur_img)
 
     fft_blur_img = np.fft.fftshift(np.fft.fft2(blur_img,(2*rows,2*cols)))
@@ -104,7 +104,7 @@ def deblur(blur_img, kernel):
     fft_p = np.fft.fftshift(np.fft.fft2(p,(2*rows,2*cols)))
 
     if (a.method=="weiner"):
-        output = weiner(fft_kernel,fft_blur_img)
+        output = weiner(fft_p,fft_blur_img)
     elif (a.method == "least_squares"):
         output = constrained_ls(fft_kernel, fft_blur_img, fft_p)
     elif (a.method == "inverse_truncated"):
@@ -119,8 +119,8 @@ def deblur(blur_img, kernel):
 
     return crop_output
 
-gt = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/gt.png",1) #load the 
-blur_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/blurred1.png",1) #load the blurred image
+# gt = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/gt.png",1) #load the 
+blur_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/motion_blurred.png",1) #load the blurred image
 # cv2.imshow("terimaka",blur_img)
 Bch,Gch,Rch = cv2.split(blur_img);	#split the image into the respective channels
 
@@ -149,16 +149,19 @@ deblur_img[:,:,1] = G_deblur
 deblur_img[:,:,2] = R_deblur
 
 deblur_img2 = cv2.cvtColor(deblur_img,cv2.COLOR_BGR2RGB)
+blur_img = cv2.cvtColor(blur_img,cv2.COLOR_BGR2RGB)
 # pdb.set_trace()
-out_psnr = psnr(gt,deblur_img2)
-print("psnr calculated",out_psnr)
+# out_psnr = psnr(gt,deblur_img2)
+# print("psnr calculated",out_psnr)
 
-out_ssim = self_ssim(gt,deblur_img)
-print("ssim calculated",out_ssim)
+# out_ssim = self_ssim(gt,deblur_img)
+# print("ssim calculated",out_ssim)
 
 # np_ssim = ssim(deblur_img2,deblur_img2)
 # print("scikit ssim",np_ssim)
 # pdb.set_trace()
-# plt.imshow(deblur_img2)
-# plt.show()
-# cv2.waitKey(0)
+plt.subplot(121),plt.imshow(blur_img)
+plt.title('Input Image'), plt.xticks([]), plt.yticks([])
+plt.subplot(122),plt.imshow(deblur_img2)
+plt.title('Out Image'), plt.xticks([]), plt.yticks([])
+plt.show()

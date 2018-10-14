@@ -27,9 +27,9 @@ def fft(img):
                     
             FFT[i,j] = dft
         
-    return FFT    
+    return FFT
 
-blur_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/fft_sample2.jpg",0) #load the blurred image
+blur_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/fft_sample.png",0) #load the blurred image
 r = 25
 c = 25
 blur_img = cv2.resize(blur_img, dsize=(r,c))
@@ -44,7 +44,7 @@ for i in range(2*r):
           pad_blur_img[i,j] = pad_blur_img[i,j] * (-1)
 
 self_fft = fft(pad_blur_img)
-mag_self_fft =  20 * np.log( 0.0000000001 + np.abs(self_fft));
+mag_self_fft =  20 * np.log(np.abs(self_fft));
 
 fft_np = np.fft.fftshift(np.fft.fft2(blur_img))
 mag_np_fft = 20 * np.log( np.abs(fft_np))
