@@ -17,18 +17,15 @@ def fft(img):
 
     for i in range(rows):
         for j in range(cols):
+            
             print(i,j)
 
-            outer_dft = 0
-            for n in range(cols):
-
-                inner_dft = 0
-                for m in range(rows):
-                    inner_dft = inner_dft + img[m,n]*np.exp(-2j * np.pi * m * i / rows)
+            dft = complex(0)
+            for m in range(rows):
+                for n in range(cols):
+                    dft = dft + img[n,m]*np.exp(-2j * np.pi * (m * i / rows + n*j/cols))
                     
-                outer_dft = outer_dft + inner_dft * np.exp(-2j * np.pi * n * j / cols)
-
-        FFT[i,j] = outer_dft
+            FFT[i,j] = dft
         
     return FFT    
 
@@ -59,4 +56,4 @@ plt.title('Numpy Magnitude Spectrum'), plt.xticks([]), plt.yticks([])
 plt.subplot(223),plt.imshow(mag_self_fft, cmap = 'gray')
 plt.title('Self Magnitude Spectrum'), plt.xticks([]), plt.yticks([])
 plt.show()
-pdb.set_trace()
+# pdb.set_trace()

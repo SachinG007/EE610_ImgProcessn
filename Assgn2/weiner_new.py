@@ -152,8 +152,11 @@ deblur_img2 = cv2.cvtColor(deblur_img,cv2.COLOR_BGR2RGB)
 out_psnr = psnr(blur_img,deblur_img2)
 print("psnr calculated",out_psnr)
 
-out_ssim = self_ssim(blur_img,deblur_img2)
+out_ssim = self_ssim(deblur_img2,deblur_img2)
 print("ssim calculated",out_ssim)
+
+np_ssim = ssim(deblur_img2,deblur_img2)
+print("scikit ssim",np_ssim)
 # pdb.set_trace()
 # plt.imshow(deblur_img2)
 # plt.show()
