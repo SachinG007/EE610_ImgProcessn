@@ -8,6 +8,8 @@ from matplotlib import pyplot as plt
 import matplotlib.image as mpimg
 from scipy.signal import butter, lfilter, freqz
 import pdb;
+import argparse
+
 
 # Filter requirements.
 order = 10

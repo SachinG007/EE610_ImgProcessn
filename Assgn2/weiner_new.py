@@ -8,6 +8,21 @@ from matplotlib import pyplot as plt
 import matplotlib.image as mpimg
 from scipy.signal import butter, lfilter, freqz
 import pdb;
+import argparse
+from skimage.measure import compare_ssim as ssim
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--method", type=str, default="inverse_truncated", choices=["full_inverse", "inverse_truncated","weiner","least_squares"], help="which method u want to use for deblurring")
+parser.add_argument("--constant", type=float, default=1,help="percentage of average value u want to give as a constant in weiner and the least least squares")
+parser.add_argument("--cutoff", type=int, default=140,help="radius of butterworth")
+a = parser.parse_args()
+
+
+def ssim(image1, image2):
+    image1 = cv2.normalize(image1, None, 0.0, 1.0, cv2.NORM_MINMAX, cv2.CV_32F)
+    image2 = cv2.normalize(image2, None, 0.0, 1.0, cv2.NORM_MINMAX, cv2.CV_32F)
+    return ssim(image1, image2)
 
 
 def psnr(img1, img2):	#input,output
@@ -16,23 +31,68 @@ def psnr(img1, img2):	#input,output
     return 20 * math.log10(inp_max / math.sqrt(mse))
     # return mse
 
-def constrained_ls(fft_kernel, fft_blur_img, fft_p):
+def self_ssim(img1,img2):
+        
+    mean1 = np.mean(img1)
+    mean2 = np.mean(img2)
+    var1 = np.var(img1)
+    var2 = np.var(img2)
 
-    gamma = 100000
-    numerator = np.conj(fft_kernel)
-    denom = np.abs(fft_kernel)**2 + gamma * np.abs(fft_p)**2
+    cov_img = (img1-mean1)*(img2-mean2)
+    cov = np.mean(cov_img) 
+    c1 = (0.01 * 255)**2
+    c2 = (0.03 * 255)**2
 
-    return fft_blur_img*numerator/denom
+    numerator = (2*mean1*mean2 + c1)*(2*cov + c2)
+    denom = (mean1**2 + mean2**2 + c1)*(var1 + var2 + c2)
+
+    return numerator/denom
+
+def butterworth_filter(size, order):
+
+    rows = size[0]
+    cols = size[1]
+    
+    x = np.arange(-rows/2,rows/2 ,1)
+    y = np.arange(-cols/2,cols/2 ,1)
+    xx, yy = np.meshgrid(x, y, sparse=True)
+    z = np.sqrt(xx**2 + yy**2)
+    # print(z)
+    cutoff = a.cutoff
+    butterworth = 1/(1 + np.power(z/cutoff, 2*order))
+    # cv2.imshow("butterworth",butterworth)
+    # pdb.set_trace()
+        
+    return butterworth
+
+def full_inverse(fft_kernel, fft_blur_img):
+
+    return fft_blur_img/fft_kernel
+
+def inverse_truncated(fft_kernel, fft_blur_img):
+
+    rows,cols = np.shape(fft_blur_img)
+
+    output = fft_blur_img/fft_kernel
+    butterwoth = butterworth_filter((rows,cols),10)
+    output = output * butterwoth
+    return output 
 
 def weiner(fft_kernel, fft_blur_img):
 
     numerator = (np.abs(fft_kernel))**2
-    denom_right = numerator + np.average(numerator)
+    denom_right = numerator + np.average(numerator) * a.constant
     denom = np.multiply(fft_kernel,denom_right)
 
     output = fft_blur_img * numerator/denom
     return output
 
+def constrained_ls(fft_kernel, fft_blur_img, fft_p):
+
+    gamma = 100000 * a.constant
+    numerator = np.conj(fft_kernel)
+    denom = np.abs(fft_kernel)**2 + gamma * np.abs(fft_p)**2 
+    return fft_blur_img*numerator/denom
 
 def deblur(blur_img, kernel):
 
@@ -43,9 +103,15 @@ def deblur(blur_img, kernel):
     fft_kernel = np.fft.fftshift(np.fft.fft2(kernel,(2*rows,2*cols)))
     fft_p = np.fft.fftshift(np.fft.fft2(p,(2*rows,2*cols)))
 
-
-    output = constrained_ls(fft_kernel, fft_blur_img, fft_p)
-    # output = weiner(fft_kernel,fft_blur_img)
+    if (a.method=="weiner"):
+        output = weiner(fft_kernel,fft_blur_img)
+    elif (a.method == "least_squares"):
+        output = constrained_ls(fft_kernel, fft_blur_img, fft_p)
+    elif (a.method == "inverse_truncated"):
+        output = inverse_truncated(fft_kernel,fft_blur_img)
+    elif (a.method == "full_inverse"):
+        output = full_inverse(fft_kernel,fft_blur_img)
+    
     output = np.fft.ifft2(np.fft.ifftshift(output))
     output = np.real(output)
 
@@ -84,7 +150,11 @@ deblur_img[:,:,2] = R_deblur
 
 deblur_img2 = cv2.cvtColor(deblur_img,cv2.COLOR_BGR2RGB)
 out_psnr = psnr(blur_img,deblur_img2)
-print(out_psnr)
-plt.imshow(deblur_img2)
-plt.show()
-cv2.waitKey(0)
+print("psnr calculated",out_psnr)
+
+out_ssim = self_ssim(blur_img,deblur_img2)
+print("ssim calculated",out_ssim)
+# pdb.set_trace()
+# plt.imshow(deblur_img2)
+# plt.show()
+# cv2.waitKey(0)
