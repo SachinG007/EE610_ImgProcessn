@@ -54,10 +54,10 @@ def new_fft(img):
 
 
 
-blur_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/fft_sample.png",0) #load the blurred image
+blur_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/Images/dft1.png",0) #load the blurred image
 # r = 10
 # c = 10
-# # blur_img = cv2.resize(blur_img, dsize=(r,c))
+blur_img = cv2.resize(blur_img, (100,100))
 cv2.imshow("ori",blur_img)
 
 # pad_blur_img = np.zeros((2*r,2*c))
@@ -69,13 +69,13 @@ cv2.imshow("ori",blur_img)
 #           pad_blur_img[i,j] = pad_blur_img[i,j] * (-1)
 pad_blur_img = blur_img
 
-self_fft = new_fft(pad_blur_img)
+self_fft = np.fft.fftshift(new_fft(pad_blur_img))
 mag_self_fft =  20 * np.log(np.abs(self_fft));
-mag_self_fft[mag_self_fft < np.power(.1,10)] = 0
+mag_self_fft[mag_self_fft < np.power(.1,5)] = 0
 
-fft_np = (np.fft.fft2(blur_img))
+fft_np = np.fft.fftshift(np.fft.fft2(blur_img))
 mag_np_fft = 20 * np.log( np.abs(fft_np))
-mag_np_fft[mag_np_fft < np.power(.1,10)] = 0
+mag_np_fft[mag_np_fft < np.power(.1,5)] = 0
 pdb.set_trace()
 
 

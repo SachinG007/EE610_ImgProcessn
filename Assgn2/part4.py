@@ -167,7 +167,7 @@ for k in range(3):
     crop_out[r_2:,0:c_2,k] = deblur_img[0:r_4,c_34:,k]
     crop_out[r_2:,c_2:,k] = deblur_img[0:r_4,0:c_4,k]
 
-crop_out= crop_out + 5
+crop_out= crop_out + 100
 
 deblur_img2 = cv2.cvtColor(deblur_img,cv2.COLOR_BGR2RGB)
 gt = cv2.cvtColor(gt,cv2.COLOR_BGR2RGB)
