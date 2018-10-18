@@ -116,13 +116,14 @@ def deblur(blur_img, kernel):
     output = np.fft.ifft2(np.fft.ifftshift(output))
     output = np.real(output)
 
-    crop_output = output[0:rows, 0:cols]
+    # crop_output = output[0:rows, 0:cols]
 
-    return crop_output
+    return output
 
 gt = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/Images/gt.jpg",1) #load the 
 blur_img = cv2.imread("/Users/sachin007/Documents/EE610/EE610_ImgProcessn/Assgn2/part4.png",1) #load the blurred image
 # cv2.imshow("terimaka",blur_img)
+blur_img = cv2.resize(blur_img,(280,372))
 Bch,Gch,Rch = cv2.split(blur_img);	#split the image into the respective channels
 
 
@@ -144,15 +145,34 @@ B_deblur = (B_deblur/np.max(B_deblur) * 255)
 np.clip(B_deblur,0,255,out=B_deblur)
 # B_deblur = (B_deblur).astype('uint8')
 # pdb.set_trace()
-
-deblur_img = np.zeros((np.shape(blur_img))).astype('uint8')
+r,c,ch = np.shape(blur_img)
+print(r,c)
+deblur_img = np.zeros((2*r,2*c,ch)).astype('uint8')
 deblur_img[:,:,0] = B_deblur
 deblur_img[:,:,1] = G_deblur
 deblur_img[:,:,2] = R_deblur
 
+crop_out = np.zeros((r,c,3)).astype('uint8')
+r_2 = int(r/2)
+c_2 = int(c/2)
+r_34 = int(3*2*r/4)
+c_34 = int(3*2*c/4)
+r_4 = int(2*r/4)
+c_4 = int(2*c/4)
+
+for k in range(3):
+    # pdb.set_trace()
+    crop_out[0:r_2,0:c_2,k] = deblur_img[r_34:,c_34:,k]
+    crop_out[0:r_2,c_2:,k] = deblur_img[r_34:,0:c_4,k]
+    crop_out[r_2:,0:c_2,k] = deblur_img[0:r_4,c_34:,k]
+    crop_out[r_2:,c_2:,k] = deblur_img[0:r_4,0:c_4,k]
+
+crop_out= crop_out + 5
+
 deblur_img2 = cv2.cvtColor(deblur_img,cv2.COLOR_BGR2RGB)
 gt = cv2.cvtColor(gt,cv2.COLOR_BGR2RGB)
 blur_img = cv2.cvtColor(blur_img,cv2.COLOR_BGR2RGB)
+crop_out = cv2.cvtColor(crop_out,cv2.COLOR_BGR2RGB)
 # deblur_img2 = deblur_img
 # pdb.set_trace()
 # out_psnr = psnr(gt,deblur_img2)
@@ -164,10 +184,10 @@ blur_img = cv2.cvtColor(blur_img,cv2.COLOR_BGR2RGB)
 # np_ssim = ssim(gt,deblur_img2,multichannel='True')
 # print("scikit ssim",np_ssim)
 # pdb.set_trace()
-plt.subplot(111)
-plt.imshow(deblur_img2)
-# plt.subplot(222)
-# plt.imshow(blur_img)
+plt.subplot(121)
+plt.imshow(blur_img)
+plt.subplot(122)
+plt.imshow(crop_out)
 # plt.subplot(223)
 # plt.imshow(kernel, cmap = 'gray')
 plt.show()
