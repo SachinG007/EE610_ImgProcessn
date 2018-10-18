@@ -1,6 +1,9 @@
 # EE610_ImgProcessn
 Image Processing COurse Assignments
 
+MAIN FILE TO BE RUN - > weiner_new.py
+DFT Code - dft.py
+
 References :
 PyQt : https://pythonprogramming.net/basic-gui-pyqt-tutorial/
 
